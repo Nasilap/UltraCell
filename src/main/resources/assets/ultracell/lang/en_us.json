@@ -1,0 +1,9 @@
+{
+  "item.ultracell.hongmeng_fe_component": "Hongmeng FE Storage Component",
+  "item.ultracell.hongmeng_fe_cell": "Hongmeng FE Storage Cell",
+  "item.ultracell.wuji_fe_component": "Wuji FE Storage Component",
+  "item.ultracell.wuji_fe_cell": "Wuji FE Storage Cell",
+  "itemGroup.ultracell": "Ultra Cell",
+  "tooltip.ultracell.capacity": "Capacity: %s",
+  "tooltip.ultracell.stored": "%s / %s"
+}

@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# ModDevGradle / NeoForge run directories
+run/
+runs/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 自检临时产物
+.selftest-out/

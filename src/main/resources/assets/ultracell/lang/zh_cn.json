@@ -1,0 +1,9 @@
+{
+  "item.ultracell.hongmeng_fe_component": "鸿蒙 FE 存储组件",
+  "item.ultracell.hongmeng_fe_cell": "鸿蒙 FE 存储元件",
+  "item.ultracell.wuji_fe_component": "无极 FE 存储组件",
+  "item.ultracell.wuji_fe_cell": "无极 FE 存储元件",
+  "itemGroup.ultracell": "究极元件",
+  "tooltip.ultracell.capacity": "容量为%s",
+  "tooltip.ultracell.stored": "%s / %s"
+}

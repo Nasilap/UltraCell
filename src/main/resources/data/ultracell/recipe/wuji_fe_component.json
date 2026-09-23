@@ -1,0 +1,30 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "megacells"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SHS",
+    "HGH",
+    "SHS"
+  ],
+  "key": {
+    "S": {
+      "item": "ae2:singularity"
+    },
+    "H": {
+      "item": "ultracell:hongmeng_fe_component"
+    },
+    "G": {
+      "item": "megacells:greater_energy_card"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "ultracell:wuji_fe_component"
+  }
+}

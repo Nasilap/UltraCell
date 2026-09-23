@@ -1,0 +1,30 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "megacells"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SCS",
+    "CEC",
+    "SCS"
+  ],
+  "key": {
+    "S": {
+      "item": "ae2:singularity"
+    },
+    "C": {
+      "item": "megacells:cell_component_256m"
+    },
+    "E": {
+      "item": "ae2:energy_card"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "ultracell:hongmeng_fe_component"
+  }
+}
