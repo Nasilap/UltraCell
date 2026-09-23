@@ -1,0 +1,11 @@
+# 统一按 LF 存储，避免 autocrlf 在检出时改写行尾造成假 diff
+* text=auto eol=lf
+
+# 二进制文件不做行尾转换
+*.png binary
+*.jar binary
+*.ogg binary
+*.nbt binary
+
+# gradlew（shell 脚本）必须保持 LF
+gradlew text eol=lf
