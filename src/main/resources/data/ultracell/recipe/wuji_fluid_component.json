@@ -1,0 +1,30 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "megacells"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SHS",
+    "HTH",
+    "SHS"
+  ],
+  "key": {
+    "H": {
+      "item": "ultracell:hongmeng_fluid_component"
+    },
+    "S": {
+      "item": "ae2:singularity"
+    },
+    "T": {
+      "item": "ae2:sky_stone_tank"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "ultracell:wuji_fluid_component"
+  }
+}

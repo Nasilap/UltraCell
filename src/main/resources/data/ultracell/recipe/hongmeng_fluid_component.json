@@ -1,0 +1,30 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "megacells"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SCS",
+    "CWC",
+    "SCS"
+  ],
+  "key": {
+    "C": {
+      "item": "megacells:cell_component_256m"
+    },
+    "S": {
+      "item": "ae2:singularity"
+    },
+    "W": {
+      "item": "minecraft:cauldron"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "ultracell:hongmeng_fluid_component"
+  }
+}

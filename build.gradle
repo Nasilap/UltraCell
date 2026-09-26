@@ -61,3 +61,10 @@ dependencies {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
+
+// 把 LICENSE 一并打进 jar，并对文件名加模组后缀（与 BiggerAE2 的做法一致）
+jar {
+    from(file('LICENSE')) {
+        rename { "${it}_ultracell" }
+    }
+}

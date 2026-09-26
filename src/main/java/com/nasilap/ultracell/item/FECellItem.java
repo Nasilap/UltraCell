@@ -1,5 +1,6 @@
 package com.nasilap.ultracell.item;
 
+import com.nasilap.ultracell.UltraCell;
 import com.nasilap.ultracell.storage.FECellHandler;
 import com.nasilap.ultracell.storage.FECellInventory;
 import com.nasilap.ultracell.storage.UInt192;
@@ -51,19 +52,31 @@ public class FECellItem extends AEBaseItem implements ICellWorkbenchItem {
     /** 升级槽数量（已定决策：3 个）。 */
     public static final int UPGRADE_SLOTS = 3;
 
-    /** AppliedFlux 的 FE 元件外壳；按注册名查找，避免编译期硬绑定它的静态字段。 */
-    private static final ResourceLocation HOUSING_ID =
-            ResourceLocation.fromNamespaceAndPath("appflux", "fe_cell_housing");
+    /**
+     * 拆解返还的外壳：2.0.0 起改为本模组自建的**究极存储外壳**。
+     *
+     * <p>用 {@code UltraCell.id(...)}（与 {@code ModItems} 风格一致；{@code MOD_ID} 是
+     * 编译期常量，静态初始化无风险）。注意这是一次**单向、不可逆**的材料转换：
+     * 1.0.0 时代用 {@code appflux:fe_cell_housing} 合成的旧元件，拆解后返还究极外壳。
+     */
+    private static final ResourceLocation HOUSING_ID = UltraCell.id("ultimate_cell_housing");
 
     private final UInt192 maxCapacity;
     private final double idleDrain;
     private final ResourceLocation componentId;
+
+    /**
+     * 百分比采样缓存。**每实例一份**（非静态）：鸿蒙与无极的分母差 18 个数量级，
+     * 共用单例会让无极元件用鸿蒙的分母且不报错。
+     */
+    private final CellTooltipFormatter tooltipFormatter;
 
     public FECellItem(Properties properties, UInt192 maxCapacity, double idleDrain, ResourceLocation componentId) {
         super(properties.stacksTo(1));
         this.maxCapacity = maxCapacity;
         this.idleDrain = idleDrain;
         this.componentId = componentId;
+        this.tooltipFormatter = new CellTooltipFormatter(maxCapacity);
     }
 
     /** 该等级的容量上限。 */
@@ -102,10 +115,14 @@ public class FECellItem extends AEBaseItem implements ICellWorkbenchItem {
         if (inventory == null) {
             return;
         }
+        UInt192 stored = inventory.getStoredEnergy();
+        // 守卫只包住缓存读写；这里的输出在守卫之外完成
+        String percent = this.tooltipFormatter.percent(stack, stored);
         lines.add(Component.translatable(
                 "tooltip.ultracell.stored",
-                NumberUtil.format(inventory.getStoredEnergy()),
-                NumberUtil.format(inventory.getMaxCapacity())));
+                NumberUtil.format(stored),
+                NumberUtil.format(inventory.getMaxCapacity()),
+                percent));
     }
 
     @Override

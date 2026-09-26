@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SQS",
+    "FLA",
+    "SQS"
+  ],
+  "key": {
+    "S": {
+      "item": "ae2:singularity"
+    },
+    "Q": {
+      "item": "ae2:quantum_ring"
+    },
+    "F": {
+      "item": "ae2:formation_core"
+    },
+    "L": {
+      "item": "ae2:quantum_link"
+    },
+    "A": {
+      "item": "ae2:annihilation_core"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "ultracell:ultimate_cell_housing"
+  }
+}

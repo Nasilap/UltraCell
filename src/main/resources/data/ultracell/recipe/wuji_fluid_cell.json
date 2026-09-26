@@ -9,7 +9,7 @@
   "category": "misc",
   "ingredients": [
     {
-      "item": "ultracell:wuji_fe_component"
+      "item": "ultracell:wuji_fluid_component"
     },
     {
       "item": "ultracell:ultimate_cell_housing"
@@ -17,6 +17,6 @@
   ],
   "result": {
     "count": 1,
-    "id": "ultracell:wuji_fe_cell"
+    "id": "ultracell:wuji_fluid_cell"
   }
 }
