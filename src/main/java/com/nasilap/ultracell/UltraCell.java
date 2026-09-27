@@ -1,5 +1,6 @@
 package com.nasilap.ultracell;
 
+import com.nasilap.ultracell.client.UltraCellClientSetup;
 import com.nasilap.ultracell.command.CellCommands;
 import com.nasilap.ultracell.command.DebugCommand;
 import com.nasilap.ultracell.command.OrphanCounter;
@@ -17,9 +18,11 @@ import appeng.core.definitions.AEItems;
 import appeng.core.localization.GuiText;
 
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.NeoForge;
 
 import com.mojang.logging.LogUtils;
@@ -30,6 +33,10 @@ import org.slf4j.Logger;
  *
  * <p>2.0.0：FE 元件加已用百分比 tooltip；新增流体 / 化学品两种外置存储元件
  * （一元件一 {@code .dat}）与一整套 {@code /ultracell} 命令。
+ *
+ * <p>2.0.1：元件 tooltip 全面配色（物品名按等级 + 4 档占用率变色）；流体 / 化学品元件
+ * 加所有者行；DC 加**归属只读镜像**（文件仍是唯一权威源）；删掉组件的容量附言；
+ * 6 个元件加**贴图状态灯**（tint，客户端注册在 {@code client.UltraCellClientSetup}）。
  *
  * <p>FE 元件仍然只走 AE2 网络，不对外提供 NeoForge 能量能力，也不走外置存储。
  */
@@ -46,6 +53,14 @@ public class UltraCell {
         ModCreativeTabs.register(modEventBus);
 
         modEventBus.addListener(UltraCell::commonSetup);
+
+        // 客户端专有注册（tint provider + 玩家名反查钩子）。
+        // **必须用 Dist 守卫**：专用服务器上本分支不执行 ⇒ 永远不会解析/加载 client 包。
+        // 刻意不用 @EventBusSubscriber —— FML 4.0.44 里它的 bus() 与 Bus 都已标记为待删除，
+        // 且 bus() 默认值是 Bus.GAME（不是 MOD），写与不写都不合适。
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            UltraCellClientSetup.register(modEventBus);
+        }
 
         // 游戏总线：外置存储的生命周期与写盘 tick、孤儿计数与提示、四套命令注册。
         // 四个 RegisterCommandsEvent 监听器各自挂一次是**允许且必要**的：

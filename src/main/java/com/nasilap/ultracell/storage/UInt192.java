@@ -137,11 +137,22 @@ public record UInt192(long high, long mid, long low) implements Comparable<UInt1
         return value > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) value;
     }
 
+    /**
+     * 由三个 long 直接算近似 double —— **不构造 {@link UInt192} 对象**（零分配）。
+     *
+     * <p>给每帧高频调用的路径用（状态灯 tint 要按帧算占用率）：
+     * 数据组件里本来就存着三个 long，没必要为了算一次比值先装箱一个 record。
+     * 与实例方法 {@link #toDouble()} 走**同一套算法**，结果完全一致。
+     */
+    public static double toDouble(long high, long mid, long low) {
+        return Math.scalb(unsignedToDouble(high), 128)
+                + Math.scalb(unsignedToDouble(mid), 64)
+                + unsignedToDouble(low);
+    }
+
     /** 近似 double 值，仅用于显示格式化（精度约 15~16 位有效数字，足够两位小数）。 */
     public double toDouble() {
-        return Math.scalb(unsignedToDouble(this.high), 128)
-                + Math.scalb(unsignedToDouble(this.mid), 64)
-                + unsignedToDouble(this.low);
+        return toDouble(this.high, this.mid, this.low);
     }
 
     /** 无符号比较。 */

@@ -5,6 +5,8 @@ import com.nasilap.ultracell.storage.FECellHandler;
 import com.nasilap.ultracell.storage.FECellInventory;
 import com.nasilap.ultracell.storage.UInt192;
 import com.nasilap.ultracell.util.NumberUtil;
+import com.nasilap.ultracell.util.StatusTint;
+import com.nasilap.ultracell.util.TooltipStyles;
 
 import appeng.api.config.FuzzyMode;
 import appeng.api.storage.StorageCells;
@@ -116,13 +118,20 @@ public class FECellItem extends AEBaseItem implements ICellWorkbenchItem {
             return;
         }
         UInt192 stored = inventory.getStoredEnergy();
-        // 守卫只包住缓存读写；这里的输出在守卫之外完成
-        String percent = this.tooltipFormatter.percent(stack, stored);
-        lines.add(Component.translatable(
-                "tooltip.ultracell.stored",
-                NumberUtil.format(stored),
-                NumberUtil.format(inventory.getMaxCapacity()),
-                percent));
+        UInt192 max = inventory.getMaxCapacity();
+        // 缓存守卫：只有确认是客户端才读写缓存（A8 的 isClientSide 守卫）；
+        // 输出在守卫之外完成
+        Level level = context.level();
+        boolean allowCache = level != null && level.isClientSide();
+        String percent = this.tooltipFormatter.percent(stack, stored, allowCache);
+
+        // 分档用未取整的真实比值，与状态灯 tint 共用 StatusTint。
+        // FE 元件**不加**所有者行（FE 元件没有 UUID，也不参与归属）。
+        int capacityLevel = StatusTint.levelOfCapacity(stored.high(), stored.mid(), stored.low(), max);
+        lines.add(TooltipStyles.line("tooltip.ultracell.stored",
+                TooltipStyles.tiered(NumberUtil.format(stored), capacityLevel),
+                TooltipStyles.limit(NumberUtil.format(max)),
+                TooltipStyles.percentTail(percent, capacityLevel)));
     }
 
     @Override

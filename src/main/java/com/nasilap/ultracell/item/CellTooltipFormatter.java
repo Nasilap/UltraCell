@@ -28,7 +28,9 @@ import java.util.Locale;
  * identity 同且存量变 → 1 秒节流；其余直接返回缓存。
  * 守卫**只包住缓存的读写**，不包住输出（输出由调用方在守卫之外完成）。
  *
- * <p>{@code %s} 的百分号放在**参数**里（模板里不写 {@code %}）。
+ * <p>{@code %s} 的百分号放在**参数**里（模板里不写 {@code %}），
+ * 而且**百分号与数字分成两个组件**：需求要求「标签与 % 都是白加粗、只有数字本体
+ * 按占用率变色」，所以本类只产出**不含 %** 的数值文本，% 由调用方拼。
  */
 public final class CellTooltipFormatter {
 
@@ -48,8 +50,12 @@ public final class CellTooltipFormatter {
 
     private long lastSampleNanos;
 
-    @Nullable
-    private ItemStack lastStackIdentity;
+    /**
+     * 上次取样的元件身份 = {@code System.identityHashCode(stack)}。
+     *
+     * <p>**刻意不持有 ItemStack 引用**：缓存单条目、无 Map / 无弱引用 / 无泄漏。
+     */
+    private int lastStackIdentity;
 
     public CellTooltipFormatter(UInt192 maxCapacity) {
         this.maxCapacity = maxCapacity;
@@ -57,17 +63,24 @@ public final class CellTooltipFormatter {
     }
 
     /**
-     * 取「已用 xx.xxx%」里的百分比文本（含百分号）。
+     * 取「已用 xx.xxx%」里的**数值文本（不含百分号）**。
      *
-     * @param stack  当前被渲染的物品栈，仅用于 identity 比较
-     * @param stored 当前存量
+     * @param stack      当前被渲染的物品栈，仅用于取 identityHashCode（**不保存引用**）
+     * @param stored     当前存量
+     * @param allowCache 只有**确认是客户端**时才允许读写缓存（{@code isClientSide()} 守卫）；
+     *                   服务端或拿不到 level 时只计算、不缓存
      */
-    public String percent(ItemStack stack, UInt192 stored) {
+    public String percent(ItemStack stack, UInt192 stored, boolean allowCache) {
+        if (!allowCache) {
+            return this.compute(stored);
+        }
+
         long now = System.nanoTime();
+        int identity = System.identityHashCode(stack);
 
         // cachedPercent == null 是兜底：时间戳初值 0 在首次调用时也会「看起来过期」
         if (this.cachedPercent != null) {
-            boolean sameIdentity = this.lastStackIdentity == stack;
+            boolean sameIdentity = identity == this.lastStackIdentity;
             if (sameIdentity && stored.equals(this.lastSampledEnergy)) {
                 return this.cachedPercent;
             }
@@ -81,7 +94,7 @@ public final class CellTooltipFormatter {
         this.lastSampledEnergy = stored;
         this.cachedPercent = computed;
         this.lastSampleNanos = now;
-        this.lastStackIdentity = stack;
+        this.lastStackIdentity = identity;
         return computed;
     }
 
@@ -107,8 +120,8 @@ public final class CellTooltipFormatter {
         return format(percent);
     }
 
-    /** 固定三位小数 + 百分号；显式 Locale.ROOT，避免小数点变成逗号。 */
+    /** 固定三位小数、**不含百分号**；显式 Locale.ROOT，避免小数点变成逗号。 */
     private static String format(double percent) {
-        return String.format(Locale.ROOT, "%.3f", percent) + "%";
+        return String.format(Locale.ROOT, "%.3f", percent);
     }
 }

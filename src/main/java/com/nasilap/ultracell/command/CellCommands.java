@@ -1,5 +1,6 @@
 package com.nasilap.ultracell.command;
 
+import com.nasilap.ultracell.UltraCell;
 import com.nasilap.ultracell.item.ExternalCellItem;
 import com.nasilap.ultracell.item.FECellItem;
 import com.nasilap.ultracell.registry.ModItems;
@@ -205,9 +206,10 @@ public final class CellCommands {
         manager.setOwnerForced(data, player.getUUID());
 
         ItemStack issued = new ItemStack(item);
-        // 回填摘要：优先取内存缓存（即上一步的 data），而不是文件里的旧值
+        // 回填摘要：优先取内存缓存（即上一步的 data），而不是文件里的旧值；
+        // owner 同样取自权威源 data（recover 刚刚 setOwnerForced 成执行者）
         CellDataManager.setSummary(issued,
-                CellSummaryComponent.of(uuid, data.typeCount(), data.used()));
+                CellSummaryComponent.of(uuid, data.owner(), data.typeCount(), data.used()));
         player.getInventory().placeItemBackInInventory(issued);
 
         source.sendSuccess(() -> Component.translatable("ultracell.command.recover.success",
@@ -247,6 +249,8 @@ public final class CellCommands {
 
         // 只改归属字段，不搬运物品；归属变更 = ③ 强制立即落盘
         manager.setOwnerForced(data, target.getUUID());
+        // 归属确实变了 ⇒ 同步 DC 只读镜像（值取自权威源 = 内存 CellData）
+        manager.syncOwnerMirror(stack, data);
 
         target.sendSystemMessage(Component.translatable("ultracell.command.trade.notify",
                 player.getDisplayName()));
@@ -322,6 +326,12 @@ public final class CellCommands {
 
         boolean hadOwner = data.hasOwner();
         manager.setOwnerForced(data, targetId);
+        // 归属确实变了 ⇒ 尽量就地刷新 DC 只读镜像。
+        // transfer 手里没有物品栈，所以只能扫在线玩家背包；扫不到的
+        // （箱子 / ME 驱动器 / 离线玩家）靠 persist 带 owner 自然收敛。
+        int mirrored = manager.syncOwnerMirrorToOnlinePlayers(uuid, data);
+        UltraCell.LOGGER.debug("Ultra Cell: transfer {} refreshed the owner mirror on {} stack(s)",
+                uuid, mirrored);
         source.sendSuccess(() -> Component.translatable(
                 hadOwner ? "ultracell.command.transfer.overwritten" : "ultracell.command.transfer.bound",
                 uuid.toString(), targetName), true);

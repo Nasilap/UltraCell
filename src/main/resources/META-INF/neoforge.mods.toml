@@ -4,7 +4,7 @@ license="MIT"
 
 [[mods]]
 modId="ultracell"
-version="2.0.0"
+version="2.0.1"
 displayName="Ultra Cell"
 authors="Nasilap"
 description='''High-capacity FE, fluid and chemical storage cells for AE2.'''

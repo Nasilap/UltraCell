@@ -122,7 +122,11 @@ public class ExternalCellInventory implements StorageCell {
             }
             data = manager.dataForWrite(uuid, tiered.getTier(), tiered.getKind());
         }
-        manager.bindOwnerIfUnowned(data, owner);
+        // 窄读（用户裁决）：只在**本次真的发生了归属绑定**时写 DC 镜像。
+        // 已属主的元件不写、不比较、不动 DC —— 刻意不做轮询式自愈。
+        if (manager.bindOwnerIfUnowned(data, owner)) {
+            manager.syncOwnerMirror(this.stack, data);
+        }
     }
 
     // ── 数据入口 ──
@@ -316,7 +320,9 @@ public class ExternalCellInventory implements StorageCell {
             return;
         }
         // DC 摘要立即刷新；文件落盘走 ③ 强制时机（AE2 主动要求保存 = 关键时机）
-        CellDataManager.setSummary(this.stack, CellSummaryComponent.of(data.uuid(), data.typeCount(), data.used()));
+        // owner 一律取权威源（内存 CellData），**不保留旧 DC 的 owner**
+        CellDataManager.setSummary(this.stack,
+                CellSummaryComponent.of(data.uuid(), data.owner(), data.typeCount(), data.used()));
         CellDataManager manager = this.manager();
         if (manager != null) {
             manager.markForceFlush(data);

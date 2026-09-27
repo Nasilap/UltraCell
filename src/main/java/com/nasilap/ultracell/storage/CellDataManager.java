@@ -6,6 +6,8 @@ import com.nasilap.ultracell.util.IOUtilities;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
 import org.jetbrains.annotations.Nullable;
@@ -284,6 +286,76 @@ public final class CellDataManager {
     public void setOwnerForced(CellData data, UUID owner) {
         data.setOwner(owner);
         data.markForcePending();
+    }
+
+    /**
+     * 把内存 {@link CellData} 的归属写进物品的 DC 镜像。
+     *
+     * <p><b>写镜像的两条纪律</b>（用户裁决，务必遵守）：
+     * <ol>
+     *   <li><b>只在"归属确实变了"的路径调用</b>：入包绑定成功 / ME 网络兜底绑定成功 /
+     *       {@code trade} / {@code transfer}。本身是"独立改写点"的
+     *       {@code persist} 与 {@code recover} 由 {@code CellSummaryComponent.of(...)}
+     *       一并带上 owner，不经本方法。</li>
+     *   <li><b>值一律取自 {@code data.owner()}</b>（内存权威副本），
+     *       <b>绝不</b>保留旧 DC 里的 owner —— 否则 transfer 找不到物品栈的场景永远不收敛。</li>
+     * </ol>
+     *
+     * <p><b>刻意不做</b>"读 DC → 与权威源比较 → 不一致就写"的轮询式自愈：
+     * 那等于给 {@code inventoryTick} 加上每 tick 的自愈，已被明确否掉
+     * （老存档元件在进入 ME 网络等 AE2 使用场景时由 persist 刷新即可）。
+     *
+     * <p>值相等时直接返回，不产生任何组件写入（避免无意义的数据同步）。
+     *
+     * @return 是否真的写了镜像
+     */
+    public boolean syncOwnerMirror(ItemStack stack, CellData data) {
+        CellSummaryComponent current = summaryOf(stack);
+        UUID owner = data.owner();
+        long ownerHigh = owner == null ? 0L : owner.getMostSignificantBits();
+        long ownerLow = owner == null ? 0L : owner.getLeastSignificantBits();
+        if (current.ownerHigh() == ownerHigh && current.ownerLow() == ownerLow) {
+            return false;
+        }
+        setSummary(stack, current.withOwner(owner));
+        return true;
+    }
+
+    /**
+     * {@code transfer} 专用：在**在线玩家的背包**里找出携带该 UUID 的元件，
+     * 逐个刷新 DC 归属镜像。
+     *
+     * <p>为什么需要它：{@code /ultracell transfer <uuid> <player>} 只按 UUID 操作，
+     * **手里没有物品栈** —— 元件可能在任何人的背包、箱子、ME 驱动器甚至离线玩家身上。
+     * 本方法把"能就地找到的"那部分刷新掉；其余的靠"DC 被改写时带 owner"自然收敛
+     * （{@code persist} / {@code recover} 是收敛点）。
+     *
+     * <p>刻意<b>不</b>扫方块实体 / ME 网络：那要么不可枚举，要么违反
+     * "不反射 AE2 内部"的硬约束，收益也极小。
+     *
+     * <p>覆盖范围：主背包 + 快捷栏 + 盔甲 + 副手（即 {@code Inventory} 的全部槽位）。
+     * 当前打开的容器菜单不在此列。
+     *
+     * @return 真正被刷新的物品栈数量（仅用于日志）
+     */
+    public int syncOwnerMirrorToOnlinePlayers(UUID uuid, CellData data) {
+        int updated = 0;
+        for (ServerPlayer player : this.server.getPlayerList().getPlayers()) {
+            Inventory inventory = player.getInventory();
+            for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+                ItemStack stack = inventory.getItem(slot);
+                if (stack.isEmpty() || !(stack.getItem() instanceof TieredCellItem)) {
+                    continue;
+                }
+                if (!uuid.equals(summaryOf(stack).uuid())) {
+                    continue;
+                }
+                if (this.syncOwnerMirror(stack, data)) {
+                    updated++;
+                }
+            }
+        }
+        return updated;
     }
 
     // ── 写盘调度 ──

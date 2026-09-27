@@ -28,10 +28,14 @@ public final class ModComponents {
                     .build());
 
     /**
-     * 外置存储元件的摘要（六个 long）：UUID、类型数、已用量。
+     * 外置存储元件的摘要（八个 long）：UUID、类型数、已用量、**归属镜像**。
      *
-     * <p><b>归属不在这里</b> —— 归属只存在数据文件里，文件是唯一权威源。
-     * 不含版本字段；六个字段一律「等于默认值即省略」。
+     * <p><b>归属的权威源是数据文件</b>（{@code .dat}）；DC 里的 owner 只是
+     * 给客户端 tooltip 读的**只读镜像**，冲突时以文件为准（台账 A4）。
+     * 写镜像的纪律见 {@code CellDataManager#syncOwnerMirror}。
+     *
+     * <p>不含版本字段；字段一律「等于默认值即省略」
+     * （2.0.0 老存档没有 owner 字段，读出来全 0 = 无主）。
      */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<CellSummaryComponent>> CELL_SUMMARY =
             DR.register("cell_summary", () -> DataComponentType.<CellSummaryComponent>builder()

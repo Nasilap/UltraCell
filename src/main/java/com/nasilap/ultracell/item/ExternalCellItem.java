@@ -9,6 +9,9 @@ import com.nasilap.ultracell.storage.TieredCellItem;
 import com.nasilap.ultracell.storage.UInt192;
 import com.nasilap.ultracell.util.ChemicalIntegration;
 import com.nasilap.ultracell.util.NumberUtil;
+import com.nasilap.ultracell.util.OwnerNameResolver;
+import com.nasilap.ultracell.util.StatusTint;
+import com.nasilap.ultracell.util.TooltipStyles;
 
 import appeng.api.config.FuzzyMode;
 import appeng.api.stacks.AEKeyType;
@@ -193,27 +196,54 @@ public class ExternalCellItem extends AEBaseItem implements ICellWorkbenchItem, 
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> lines, TooltipFlag flag) {
         CellSummaryComponent summary = CellDataManager.summaryOf(stack);
 
-        // ① UUID 行（最上面）：DC 六个 long 全 0（新合成、未入包、未 getuuid）时显示「未分配」。
+        // ① UUID 行（最上面）：DC 全 0（新合成、未入包、未 getuuid）时显示「未分配」。
         //    FE 元件不加这一行（本类只用于流体/化学品元件）。
         UUID uuid = summary.uuid();
         if (uuid != null) {
-            lines.add(Component.translatable("ultracell.tooltip.uuid.assigned", uuid.toString()));
+            lines.add(TooltipStyles.line("ultracell.tooltip.uuid.assigned",
+                    TooltipStyles.value(uuid.toString())));
         } else {
-            lines.add(Component.translatable("ultracell.tooltip.uuid.unassigned"));
+            lines.add(TooltipStyles.line("ultracell.tooltip.uuid.unassigned"));
         }
 
-        // ② 类型位占用（DSH 自行添加的行，规格未要求 —— 见交付报告说明）
-        lines.add(Component.translatable("ultracell.tooltip.external.types",
-                Long.toString(summary.typeCount()), Integer.toString(this.typeSlots)));
+        // ② 类型位占用：数值按**类型位占用率**分档，与容量档位互相独立
+        int typeLevel = StatusTint.levelOfCount(summary.typeCount(), this.typeSlots);
+        lines.add(TooltipStyles.line("ultracell.tooltip.external.types",
+                TooltipStyles.tiered(Long.toString(summary.typeCount()), typeLevel),
+                TooltipStyles.limit(Integer.toString(this.typeSlots))));
 
         // ③ 「已用」行：与 FE 元件**同一个 key、同一种格式**：`<已用> / <总量> 已用xx.xxx%`
-        // 守卫只包住缓存读写，输出在守卫之外（与 A8 一致）
+        //    分档用**未取整的真实比值**（与状态灯 tint 同一套 StatusTint）
+        //    缓存守卫：只有确认是客户端才读写缓存（A8 的 isClientSide 守卫）；输出在守卫之外
         UInt192 used = summary.used();
-        String percent = this.tooltipFormatter.percent(stack, used);
-        lines.add(Component.translatable("tooltip.ultracell.stored",
-                NumberUtil.format(used),
-                NumberUtil.format(this.totalCapacity),
-                percent));
+        Level level = context.level();
+        boolean allowCache = level != null && level.isClientSide();
+        int capacityLevel = StatusTint.levelOfCapacity(
+                summary.usedHigh(), summary.usedMid(), summary.usedLow(), this.totalCapacity);
+        String percent = this.tooltipFormatter.percent(stack, used, allowCache);
+        lines.add(TooltipStyles.line("tooltip.ultracell.stored",
+                TooltipStyles.tiered(NumberUtil.format(used), capacityLevel),
+                TooltipStyles.limit(NumberUtil.format(this.totalCapacity)),
+                TooltipStyles.percentTail(percent, capacityLevel)));
+
+        // ④ 所有者行：位于「已用」之后；mod 名由外部在本方法之后追加，所以天然在其之前。
+        //    归属读的是 DC 里的**只读镜像**（权威源是数据文件）。
+        lines.add(TooltipStyles.line("ultracell.tooltip.owner", ownerArgument(summary)));
+    }
+
+    /**
+     * 所有者行的参数：查得到名字就显示名字，只有 UUID 就显示 UUID，无主显示「无主」。
+     *
+     * <p>反查走 {@link OwnerNameResolver}（1 分钟缓存；多人服务器上由客户端注入的
+     * 在线玩家名兜底，查不到一律降级为 UUID）。
+     */
+    private static Component ownerArgument(CellSummaryComponent summary) {
+        UUID owner = summary.owner();
+        if (owner == null) {
+            return TooltipStyles.ownerless();
+        }
+        String name = OwnerNameResolver.nameOf(owner);
+        return TooltipStyles.value(name == null ? owner.toString() : name);
     }
 
     /**
@@ -274,7 +304,11 @@ public class ExternalCellItem extends AEBaseItem implements ICellWorkbenchItem, 
         }
 
         // 6. 无主才绑定（已有归属不再改绑）；归属变更 = ③ 强制立即落盘
-        manager.bindOwnerIfUnowned(data, player.getUUID());
+        //    窄读（用户裁决）：只有**本次真的完成了绑定**才写 DC 镜像；
+        //    已属主的元件不写、不比较、不动 DC —— 刻意不做轮询式自愈。
+        if (manager.bindOwnerIfUnowned(data, player.getUUID())) {
+            manager.syncOwnerMirror(stack, data);
+        }
     }
 
     // ── 拆解（与 FE 元件完全一致的条件与产出）──
