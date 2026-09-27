@@ -34,7 +34,7 @@ Per-type capacity = total capacity / type slots.
 | `/ultracell scan` | Everyone / 所有人 | Scan for orphan data files / 扫描孤儿数据文件 |
 | `/ultracell trade <player>` | Everyone / 所有人 | Transfer cell ownership to an online player / 转移元件归属给在线玩家 |
 | `/ultracell transfer <uuid> <player>` | OP | Force-transfer ownership; works on offline players / 强制转移归属，可对离线玩家 |
-| `/ultracell debug` | Everyone / 所有人 | Debug utilities / 调试工具 |
+| `/ultracell debug` | OP | Debug utilities / 调试工具 |
 
 ## Filtering / 过滤机制
 
@@ -44,6 +44,28 @@ Per-type capacity = total capacity / type slots.
   配置白名单：只接受白名单内。
 - Inverter Card: rejects whitelisted types, dynamic allocation for the rest. With no whitelist configured, the Inverter Card is ignored (native AE2 behaviour).
   反相卡：拒绝白名单内，其余动态占位。未配置白名单时，反相卡会被忽略（AE2 原生语义）。
+
+## Tooltips / Tooltip
+
+Item names are colored by tier: Hongmeng and the Ultimate Cell Housing in purple, Wuji in gold.
+
+物品名按等级着色：鸿蒙与究极存储外壳为紫色，无极为金色。
+
+Fluid and chemical cell tooltips show:
+
+流体与化学品元件的 tooltip 显示：
+
+- **UUID** — amber
+- **Type count** and **usage** — values colored by four tiers: green (`0–35%`), yellow (`35–70%`), orange (`70–95%`), red (`95–100%`); capacity limit shown in light blue
+- **Owner** — the player name in amber, or `Unassigned` if the cell has no owner
+
+- **UUID** — 亮黄
+- **类型数**与**已用** — 数值按四档着色：绿（`0–35%`）、黄（`35–70%`）、橙（`70–95%`）、红（`95–100%`）；上限值浅蓝
+- **所有者** — 玩家名亮黄；无主时显示「无主」
+
+Cell textures include a small status light that reflects the cell's usage, using the same four-tier color scheme.
+
+元件贴图带一个状态灯，颜色与 tooltip 的四档占用率一致。
 
 ## Development Environment / 开发环境
 
@@ -63,9 +85,9 @@ Per-type capacity = total capacity / type slots.
 
 每元件一个独立 `.dat` 文件（压缩 NBT），按 UUID 命名。写盘策略为 tick 末合并写 + 关服写 + 元件离开容器写 + 每 30 秒兜底写。不防复制。
 
-**Ownership / 归属**: a cell in a player's inventory is bound to that player; a cell in an ME network belongs to the network owner; existing ownership is never rebound.
+**Ownership / 归属**: a cell in a player's inventory is bound to that player; a cell in an ME network belongs to the network owner; existing ownership is never rebound. The owner is stored in the cell's data file, with a read-only mirror in the item's data component for client-side display.
 
-元件在玩家背包 → 绑给该玩家；在 ME 网络 → 归网络主人；已有归属不再改绑。
+元件在玩家背包 → 绑给该玩家；在 ME 网络 → 归网络主人；已有归属不再改绑。归属存于元件数据文件，物品组件中保留一份只读镜像，供客户端显示。
 
 **Orphans / 孤儿**: never auto-deleted, kept for recovery.
 
