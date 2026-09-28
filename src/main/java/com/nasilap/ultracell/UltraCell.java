@@ -62,9 +62,10 @@ public class UltraCell {
             UltraCellClientSetup.register(modEventBus);
         }
 
-        // 游戏总线：外置存储的生命周期与写盘 tick、孤儿计数与提示、四套命令注册。
-        // 四个 RegisterCommandsEvent 监听器各自挂一次是**允许且必要**的：
-        // 同名子节点会被 Brigadier 递归合并到同一棵 /ultracell 树上。
+        // 游戏总线：外置存储的生命周期与写盘 tick、孤儿计数与提示、三套命令注册。
+        // **三个** RegisterCommandsEvent 监听器（DebugCommand / CellCommands / ScanCommand）
+        // 各自挂一次是**允许且必要**的：同名子节点会被 Brigadier 递归合并到同一棵 /ultracell 树上。
+        // 注意 OrphanCounter **不注册命令** —— 它只是进存档时提示玩家自己去敲 /ultracell scan。
         NeoForge.EVENT_BUS.register(new StorageEvents());
         NeoForge.EVENT_BUS.register(new OrphanCounter());
         NeoForge.EVENT_BUS.register(DebugCommand.class);

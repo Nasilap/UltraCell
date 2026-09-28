@@ -34,7 +34,41 @@ Per-type capacity = total capacity / type slots.
 | `/ultracell scan` | Everyone / 所有人 | Scan for orphan data files / 扫描孤儿数据文件 |
 | `/ultracell trade <player>` | Everyone / 所有人 | Transfer cell ownership to an online player / 转移元件归属给在线玩家 |
 | `/ultracell transfer <uuid> <player>` | OP | Force-transfer ownership; works on offline players / 强制转移归属，可对离线玩家 |
-| `/ultracell debug` | OP | Debug utilities / 调试工具 |
+| `/ultracell debug` | Everyone / 所有人 | Debug utilities / 调试工具 |
+
+All subcommands live under `/ultracell`. Every one of them is available to all players except `transfer`, which requires OP.
+
+所有子命令都挂在 `/ultracell` 下。除 `transfer` 需要 OP 外，其余对所有玩家开放。
+
+- `scan` asks for confirmation first, then has a 1-minute cooldown (global and per-player). It only looks at the currently loaded area; cells inside unloaded chunks will look like orphans.
+- `getuuid` allocates a UUID if the cell does not have one yet.
+- `recover` needs a free inventory slot, otherwise it refuses.
+- `debug` provides five sub-operations — `list`, `inspect <uuid>`, `create <tier> <kind>`, `corrupt [clear]`, `flush` — and can also be run from the server console or command blocks.
+
+- `scan` 先二次确认，然后有 1 分钟冷却（全局与每个玩家各一份）。它只检测当前加载范围，未加载区块里的元件看起来会像孤儿。
+- `getuuid` 在元件还没有 UUID 时会为它分配一个。
+- `recover` 需要背包有空位，否则拒绝。
+- `debug` 提供五个子操作 —— `list`、`inspect <uuid>`、`create <tier> <kind>`、`corrupt [clear]`、`flush` —— 也可以从服务器控制台 / 命令方块执行。
+
+## UUID
+
+FE cells have no UUID: their energy lives in the item's data components.
+
+FE 元件没有 UUID：能量存在物品组件里。
+
+Each fluid or chemical cell gets a UUID the first time it is used (first insert, first pickup, or `/ultracell getuuid`). That UUID names the cell's `.dat` file and is the key to getting its data back.
+
+每个流体 / 化学品元件在**首次使用**时获得 UUID（首次存入、首次入包，或执行 `/ultracell getuuid`）。这个 UUID 既是它 `.dat` 数据文件的名字，也是把数据找回来的唯一凭据。
+
+- It is shown in the cell's tooltip and by `/ultracell getuuid` (click to copy).
+- `/ultracell scan` lists orphan files by UUID, and `/ultracell recover <uuid>` issues a new cell bound to that data.
+- A UUID never changes. Copying a cell copies the UUID as well, so both copies share the same data — there is no copy protection.
+- Ownership is a separate UUID: it is stored in the data file, with a read-only mirror in the item component for display.
+
+- tooltip 与 `/ultracell getuuid` 都会显示它（可点击复制）。
+- `/ultracell scan` 按 UUID 列出孤儿文件；`/ultracell recover <uuid>` 按该 UUID 发放一个新元件、接回原有数据。
+- UUID 一旦分配**永不改变**。复制元件会连 UUID 一起复制 ⇒ 两个副本共享同一份数据，**不防复制**。
+- 归属是**另一个 UUID**：存在数据文件里，物品组件中只有一份只读镜像供显示。
 
 ## Filtering / 过滤机制
 
